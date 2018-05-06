@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+     http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+     http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+     http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+     http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <context:component-scan base-package="demo" annotation-config="true"/>
+
+
+    <bean id="propertyConfigurer"
+          class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <!--加载顺序-->
+        <property name="order" value="2"/>
+        <property name="ignoreUnresolvablePlaceholders" value="true"/>
+        <property name="locations">
+            <list>
+                <value>classpath:datasource.properties</value>
+            </list>
+        </property>
+        <!--文件编码-->
+        <property name="fileEncoding" value="utf-8"/>
+    </bean>
+   <!-- <context:property-placeholder location="classpath:datasource.properties"/>-->
+
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+          destroy-method="close">
+        <property name="driverClassName" value="${db.driverClassName}"/>
+        <property name="url" value="${db.url}"/>
+        <property name="username" value="${db.username}"/>
+        <property name="password" value="${db.password}"/>
+
+        <property name="initialSize" value="${db.initialSize}"/>
+        <!--连接池最大值-->
+        <property name="maxActive" value="${db.maxActive}"/>
+        <!--空闲链接数大于这个值时，会释放-->
+        <property name="maxIdle" value="${db.maxIdle}"/>
+        <!--空闲链接数小于这个值时，会提前申请，避免来不及-->
+        <property name="minIdle" value="${db.minIdle}"/>
+        <!--最大连接等待时间-->
+        <property name="maxWait" value="${db.maxWait}"/>
+        <!--创立连接时，默认auto_commit，改为false报错-->
+        <property name="defaultAutoCommit" value="${db.defaultAutoCommit}"/>
+        <!--连接超时时间，默认半小时-->
+        <property name="minEvictableIdleTimeMillis" value="${db.minEvictableIdleTimeMillis}"/>
+    </bean>
+
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <!--Spring可以通过指定classpath*:与classpath:前缀加路径的方式从classpath
+        加载文件,如bean的定义文件.classpath*:的出现是为了从
+        多个jar文件中加载相同的文件.classpath:只能加载找到的第一个文件.-->
+        <property name="mapperLocations" value="classpath*:mappers/*Mapper.xml"/>
+        <!--mybatis主配置文件，这里省略-->
+        <!-- <property name="configLocation" value=""/>-->
+        <!--分页插件配置-->
+        <property name="plugins">
+            <array>
+                <bean class="com.github.pagehelper.PageInterceptor">
+                    <property name="properties">
+                        <!--使用下面的方式配置参数，一行配置一个 -->
+                        <value>
+
+                            helperDialect=mysql
+                        </value>
+                    </property>
+                </bean>
+            </array>
+        </property>
+
+        <!--pagehelper 之前版本的配置-->
+       <!-- <property name="plugins">
+            <array>
+                <bean class="com.github.pagehelper.PageHelper">
+                    <property name="properties">
+                        <value>dialect=mysql</value>
+                    </property>
+                </bean>
+            </array>
+        </property>-->
+    </bean>
+
+    <!--在MyBatis-Spring中提供了一个转换器MapperScannerConfig它可以将接口
+   转换为Spring容器中的Bean，在Service中@Autowired的方法直接注入接口实例。
+   在Spring的配置文件中可以采用以下所示的配置将接口转化为Bean。-->
+    <bean name="mapperScannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="demo.dao"/>
+        <!--<property name="sqlSessionFactoryBeanName" ref="sqlSessionFactory"/>-->
+    </bean>
+
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="rollbackOnCommitFailure" value="true"/>
+    </bean>
+
+</beans>
